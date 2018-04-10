@@ -1,6 +1,8 @@
 import sys
 import argparse
 import itertools
+from collections import deque
+from copy import deepcopy
 
     
 
@@ -30,7 +32,9 @@ class csp:
         for x in range(0, len(self.emptyBoard)):
             if self.nput[x] == '0':
                 domain = list(range(1,10))
-            else: domain = self.nput[x]
+            else:
+                domain = self.nput[x]
+                domain = [int(domain)]
             
             self.board.update({self.emptyBoard[x]: domain})
         
@@ -70,46 +74,59 @@ class csp:
         return [a + b for a in alpha for b in beta]
         
             
-def ac3(sudoku):
+def ac3(csp):
 
-    queue = list(sudoku.constraints)
+    queue = deque()
+    for x in csp.constraints:
+       queue.append(x)
+    
 
     while queue:
+        
+        xi, xj = queue.popleft()
+        
 
-        xi, xj = queue.pop(0)
+        if revise(csp, str(xi), str(xj)):
+            
 
-        if revise(sudoku, xi, xj):
-
-            if len(sudoku.domains[xi]) == 0:
+            if len(csp.board[xi]) == 0:
                 return False
 
-            for xk in sudoku.neighbors[xi]:
+            for xk in csp.neighbors[xi]:
                 if xk != xi:
                     queue.append([xk, xi])
 
     return True
 
     
-def revise(sudoku, xi, xj):
+def revise(csp, xi, xj):
 
     revised = False
 
-    for x in sudoku.domains[xi]:
-        if not any([sudoku.constraint(x, y) for y in sudoku.domains[xj]]):
-            sudoku.domains[xi].remove(x)
+    for x in csp.board[xi]:
+        count = 0
+        for y in csp.board[xj]:
+            if x != y:
+                count += count+1
+        if count == 0:
+            csp.board[xi].remove(x)
+            print('here')
             revised = True
 
     return revised
 
 
-def backtrack(assignment, sudoku):
+def constraint(xi, xj): return xi != xj
 
-    if len(assignment) == len(sudoku.variables):
+
+'''def backtrack(assignment, csp):
+
+    if len(assignment) == len(csp.variables):
         return assignment
 
-    var = select_unassigned_variable(assignment, sudoku)
+    var = select_unassigned_variable(assignment, csp)
 
-    for value in order_domain_values(sudoku, var):
+    for value in order_domain_values(csp, var):
 
         if sudoku.consistent(assignment, var, value):
 
@@ -124,20 +141,18 @@ def backtrack(assignment, sudoku):
     return False
 
 
-# Most Constrained Variable heuristic
-# Pick the unassigned variable that has fewest legal values remaining.
-def select_unassigned_variable(assignment, sudoku):
-    unassigned = [v for v in sudoku.variables if v not in assignment]
-    return min(unassigned, key=lambda var: len(sudoku.domains[var]))
+
+def select_unassigned_variable(assignment, csp):
+    unassigned = [v for v in csp.variables if v not in assignment]
+    return min(unassigned, key=lambda var: len(csp.domains[var]))
 
 
-# Least Constraining Value heuristic
-# Prefers the value that rules out the fewest choices for the neighboring variables in the constraint graph.
-def order_domain_values(sudoku, var):
-    if len(sudoku.domains[var]) == 1:
-        return sudoku.domains[var]
 
-    return sorted(sudoku.domains[var], key=lambda val: sudoku.conflicts(sudoku, var, val))
+def order_domain_values(csp, var):
+    if len(csp.domains[var]) == 1:
+        return csp.domains[var]
+
+    return sorted(csp.domains[var], key=lambda val: csp.conflicts(csp, var, val))'''
 
 
 
@@ -150,10 +165,10 @@ def main():
     board = csp(args.b)
 
     if ac3(board):
-        if board.solved():
-            print(board.board)
+        #if board.solved():
+        print(board.board)
 
-        else:
+        '''else:
 
             assignment = {}
 
@@ -171,7 +186,7 @@ def main():
                 print(board.board)
 
             else:
-                print ("No solution exists")
+                print ("No solution exists")'''
             
 
 if __name__ == "__main__":
