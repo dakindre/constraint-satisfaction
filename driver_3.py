@@ -72,9 +72,21 @@ class csp:
 
     def combine(self, alpha, beta):
         return [a + b for a in alpha for b in beta]
+
+    def solved(self):
+        for key, value in self.board.items():
+            if len(value)>1: return False
+        return True
         
+    def solutionStr(self):
+        solution = ''
+        for key, value in self.board.items():
+            solution = solution + str(value[0])
+
+        return solution
             
-def ac3(csp):
+            
+def AC3(csp):
 
     queue = deque()
     for x in csp.constraints:
@@ -110,7 +122,6 @@ def revise(csp, xi, xj):
                 count += count+1
         if count == 0:
             csp.board[xi].remove(x)
-            print('here')
             revised = True
 
     return revised
@@ -154,6 +165,19 @@ def order_domain_values(csp, var):
 
     return sorted(csp.domains[var], key=lambda val: csp.conflicts(csp, var, val))'''
 
+def writeOutput(output):
+    with open('output.txt', 'a') as myfile:
+        myfile.write(output + '\n')
+        
+
+    
+def RunCSP(board):
+    assignment = AC3(board)
+    if board.solved():
+        return board.solutionStr() + ' AC3'
+    #assignment = BTS(board)
+    return ' BTS'
+
 
 
 def main():
@@ -164,29 +188,8 @@ def main():
     
     board = csp(args.b)
 
-    if ac3(board):
-        #if board.solved():
-        print(board.board)
+    writeOutput(RunCSP(board))
 
-        '''else:
-
-            assignment = {}
-
-            for x in sudoku.variables:
-                if len(sudoku.domains[x]) == 1:
-                    assignment[x] = sudoku.domains[x][0]
-
-            assignment = backtrack(assignment, sudoku)
-
-            for d in sudoku.domains:
-                sudoku.domains[d] = assignment[d] if len(d) > 1 else sudoku.domains[d]
-
-            if assignment:
-
-                print(board.board)
-
-            else:
-                print ("No solution exists")'''
             
 
 if __name__ == "__main__":
