@@ -1,6 +1,7 @@
 import sys
 import itertools
 from collections import Counter
+import operator
 
 
 class csp:
@@ -112,17 +113,20 @@ class csp:
         for k in sorted(newBoard, key=lambda k: len(newBoard[k])):
             return k
 
-    #Bad
+    #Good
     def LCV(self, var):
         neighbors = {key: value for key, value in self.board.items() if key in self.neighbors[var]}
         c = Counter()
         for x in neighbors.values():
             c.update(set(x))
         Counter(c.values())
-        print(neighbors)
-        print(c)
-        sort = sorted(c.values())
-        print(sort)
+        rank = {key: value for key, value in c.items() if key in self.board[var]}
+        return [x[0] for x in sorted(rank.items(), key=operator.itemgetter(1))]
+        
+
+        
+        
+        
         
 
 

@@ -56,7 +56,8 @@ def backtrack(assignment, csp):
 
     var = csp.MRV(assignment)
     for value in csp.LCV(var):
-
+        print('Var ', var,  ' Value ', value)
+        print(assignment, len(assignment))
         if csp.consistent(assignment, var, value):
 
             csp.assign(var, value, assignment)
