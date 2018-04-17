@@ -12,20 +12,21 @@ class csp:
         
         self.board = {}
         self.createBoard()
-        
-        self.constraints = []
+
+        self.constraints= []
         self.createConstraints()
         
         self.neighbors = {}
-        self.build_neighbors()
+        self.createNeighbors()
 
-        self.pruned = {}
+        self.unassigned = {}
         
         
 
     ###########################################################################
     # Create Empty Board with IDs
     # Assign Domains to Empty Board
+    # Create Unassigned List for BTS
     
     def createBoard(self):
         self.emptyBoard=[]
@@ -45,58 +46,66 @@ class csp:
             self.board.update({self.emptyBoard[x]: domain})
 
 
-    def createPrune(self):
+    def createUnassignment(self):
         for x in range(0, len(self.emptyBoard)):
             if self.nput[x] == '0':
                 domain = list()
             else:
                 domain = self.nput[x]
                 domain = [int(domain)]
-            self.pruned.update({self.emptyBoard[x]: domain})
+            self.unassigned.update({self.emptyBoard[x]: domain})
             
         
     ####################################
-    #
+    # 1. Create Row Constraints
+    # 2. Create Column Constraints
+    # 3. Create Cube Lists
+    # 4. Create Cube Constraints
+    # 5. Create Neighbors
 
-    #Bad
+        
     def createConstraints(self):
-        blocks = (
-            [self.combine(self.alphaList, number) for number in self.numbeList] +
-            [self.combine(character, self.numbeList) for character in self.alphaList] +
-            [self.combine(character, number) for character in ('ABC', 'DEF', 'GHI') for number in ('123', '456', '789')])
+        for x in self.emptyBoard:
+            for y in self.emptyBoard:
+                if x!=y and x[0]==y[0]:
+                    self.constraints.append([x, y])
+                    
+        self.createColumnConstraints()
+                    
+                    
+    def createColumnConstraints(self):
+        for x in self.emptyBoard:
+            for y in self.emptyBoard:
+                if x!=y and x[1]==y[1]:
+                    self.constraints.append([x, y])
 
-        for block in blocks:
-            combinations = self.permutate(block)
-            for combination in combinations:
-                if [combination[0], combination[1]] not in self.constraints:
-                    self.constraints.append([combination[0], combination[1]])
+        self.createCubes()
 
-    #Bad
-    def build_neighbors(self):
-
+    def createCubes(self):
+        self.cubes=[]
+        for x in ['ABC', 'DEF', 'GHI']:
+            for n in ['123', '456', '789']:
+                cube=[]
+                for a in x:
+                    for b in n:
+                        cube.append(a+b)
+                self.cubes.append(cube)
+        self.createCubeConstraints()
+                        
+    
+    def createCubeConstraints(self):
+        for cube in self.cubes:
+            for x in cube:
+                for y in cube:
+                    if x != y and [x, y] not in self.constraints:
+                        self.constraints.append([x, y])
+    
+    def createNeighbors(self):
         for x in self.board:
             self.neighbors[x] = list()
             for c in self.constraints:
                 if x == c[0]:
                     self.neighbors[x].append(c[1])
-
-    #Bad
-    def permutate(self, iterable):
-        result = list()
-
-        for L in range(0, len(iterable) + 1):
-            if L == 2:
-                for subset in itertools.permutations(iterable, L):
-                    result.append(subset)
-
-        return result
-
-    #Bad
-    def combine(self, alpha, beta):
-        return [a + b for a in alpha for b in beta]
-
-    
-
 
 
 
@@ -107,14 +116,15 @@ class csp:
     # 3. consistant - returns bool true if value is not assigned to neighbor
     # 4. forwardChecking - removes val from neighbor domain and creates inference
 
-    #Good
     def MRV(self, assignment):
         newBoard = {key: value for key, value in self.board.items() if key not in assignment}
         for k in sorted(newBoard, key=lambda k: len(newBoard[k])):
             return k
 
-    #Good
     def LCV(self, var):
+        if len(self.board[var]) == 1:
+            return self.board[var]
+        
         neighbors = {key: value for key, value in self.board.items() if key in self.neighbors[var]}
         c = Counter()
         for x in neighbors.values():
@@ -122,70 +132,27 @@ class csp:
         Counter(c.values())
         rank = {key: value for key, value in c.items() if key in self.board[var]}
         return [x[0] for x in sorted(rank.items(), key=operator.itemgetter(1))]
-        
-
-        
-        
-        
-        
 
 
-    
-
-
-
-    #Bad
-    def conflicts(self, var, val):
-
-        count = 0
-
-        for n in self.neighbors[var]:
-            if len(self.board[n]) > 1 and val in self.board[n]:
-                count += 1
-
-        return count
-    
-    
-
-
-
-    #Bad
     def consistent(self, assignment, var, value):
-        consistent = True
-
         for key, val in assignment.items():
             if val == value and key in self.neighbors[var]:
                 consistent = False
+        return True
 
-        return consistent
-
-    #Bad
-    def assign(self, var, value, assignment):
-
-        assignment[var] = value
-
-        self.forwardChecking(var, value, assignment)
+    def forwardChecking(self, assignment, var, value):
+        for n in self.neighbors[var]:
+            if n not in assignment and value in self.board[n]:
+                self.board[n].remove(value)
+                self.unassigned[var].append((n, value))
 
         
-    #Bad
-    def unassign(self, var, assignment):
+    def reassign(self, var, assignment):
+        for x in self.unassigned[var]:
+            self.board[x[0]].append(x[1])
+        
+        
 
-        if var in assignment:
-
-            for (D, v) in self.pruned[var]:
-                self.board[D].append(v)
-
-            self.pruned[var] = []
-
-            del assignment[var]
-
-    #Bad
-    def forwardChecking(self, var, value, assignment):
-        for neighbor in self.neighbors[var]:
-            if neighbor not in assignment:
-                if value in self.board[neighbor]:
-                    self.board[neighbor].remove(value)
-                    self.pruned[var].append((neighbor, value))
 
 
     ###########################################################################
@@ -206,17 +173,11 @@ class csp:
     
     def solutionStr(self):
         solution = ''
-        for value in self.board.values():
-            solution = solution + str(value[0])
+        for x in self.emptyBoard:
+            self.board[x]
+            solution = solution + str(self.board[x][0])
         return solution
 
-        
-
-'''    def createAssignment(self):
-        for key, value in self.board.items():
-            if len(value) == 1:
-                self.assignment[key] = value[0]'''
-    
     
             
 

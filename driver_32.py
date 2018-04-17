@@ -105,9 +105,11 @@ def main():
             if isinstance(assignment, dict):
                 for key, value in assignment.items():
                     csp.board[key] = [value]
-                if csp.solved():
-                    writeOutput(csp.solutionStr() + ' BTS')
-       
+                writeOutput(csp.solutionStr() + ' BTS')
+
+        
+
+            
 
 if __name__ == "__main__":
 	main()
